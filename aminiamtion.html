@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live Math Art</title>
+<style>
+  body { margin: 0; background: black; overflow: hidden; font-family: Arial, sans-serif; }
+  #overlay { position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; padding: 20px; box-sizing: border-box; }
+  #formula { font-size: 24px; font-weight: bold; color: white; }
+  #info { position: absolute; bottom: 20px; left: 20px; font-size: 18px; font-weight: bold; color: white; }
+  #name { position: absolute; bottom: 20px; right: 20px; font-size: 18px; font-weight: bold; color: white; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div id="overlay">
+  <div id="formula">r = s · cos(g θ) · (2 + 0.5 · cos(21θ)) + sin(θ/3) · cos(7θ)</div>
+</div>
+<div id="info">s = 0, g = 0</div>
+<div id="name">Pablo Van der Sande</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let width = canvas.width = window.innerWidth;
+let height = canvas.height = window.innerHeight;
+const centerX = width/2;
+const centerY = height/2;
+
+// PARAMETERS
+const thetaCount = 4000;
+const theta = Array.from({length: thetaCount}, (_, i) => i * 12 * Math.PI / (thetaCount-1));
+let frame = 0;
+const frames = 2000; // number of frames for one loop
+const colorSpeed = 0.1;
+
+// Resize handler
+window.addEventListener('resize', () => {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+});
+
+// LOOPABLE s and g (1 full cycle over frames)
+function sFunc(t) { return 10 * Math.sin(2 * Math.PI * t / frames); }
+function gFunc(t) { return 0.25 + 0.25 * Math.sin(2 * Math.PI * t / frames); }
+
+// MAX RADIUS FOR SCALING
+const maxR = 12; // approximate max |r|
+const scale = Math.min(width, height)/(2*maxR) * 0.5; // fit nicely in canvas
+
+// DRAW LOOP
+function draw() {
+  ctx.clearRect(0,0,width,height);
+
+  const s = sFunc(frame);
+  const g = gFunc(frame);
+
+  // Update overlay
+  document.getElementById('info').textContent = `s = ${s.toFixed(2)}, g = ${g.toFixed(3)}`;
+
+  // DRAW CURVE
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.lineWidth = 2;
+
+  for (let i = 0; i < theta.length-1; i++) {
+    const th1 = theta[i];
+    const th2 = theta[i+1];
+
+    const r1 = s * Math.cos(g*th1)*(2+0.5*Math.cos(21*th1)) + Math.sin(th1/3)*Math.cos(7*th1);
+    const r2 = s * Math.cos(g*th2)*(2+0.5*Math.cos(21*th2)) + Math.sin(th2/3)*Math.cos(7*th2);
+
+    const x1 = r1 * scale * Math.cos(th1);
+    const y1 = r1 * scale * Math.sin(th1);
+    const x2 = r2 * scale * Math.cos(th2);
+    const y2 = r2 * scale * Math.sin(th2);
+
+    const hue = (i/theta.length*360 + frame*colorSpeed*10) % 360;
+    ctx.strokeStyle = `hsl(${hue},100%,50%)`;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  frame = (frame+1) % frames;
+  requestAnimationFrame(draw);
+}
+
+// START
+draw();
+</script>
+</body>
+</html>
